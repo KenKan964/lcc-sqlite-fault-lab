@@ -1,0 +1,426 @@
+{
+  "T01": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "pause": "before_commit"
+        }
+      ],
+      [
+        "wait",
+        "a",
+        "before_commit"
+      ],
+      [
+        "kill",
+        "a"
+      ],
+      [
+        "resolve"
+      ],
+      [
+        "replay",
+        "retry"
+      ],
+      [
+        "resolve"
+      ]
+    ],
+    "expect": {
+      "effect_count": 1,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [],
+      "kills": [
+        "before_commit"
+      ]
+    },
+    "contains": {
+      "recoveries": [
+        "REPLAY_ALLOWED",
+        "COMPLETED"
+      ]
+    }
+  },
+  "T02": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "pause": "after_commit"
+        }
+      ],
+      [
+        "wait",
+        "a",
+        "after_commit"
+      ],
+      [
+        "kill",
+        "a"
+      ],
+      [
+        "resolve"
+      ],
+      [
+        "replay",
+        "retry"
+      ]
+    ],
+    "expect": {
+      "effect_count": 1,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [],
+      "kills": [
+        "after_commit"
+      ]
+    },
+    "contains": {
+      "recoveries": [
+        "COMPLETED"
+      ]
+    }
+  },
+  "T03": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "pause": "before_commit"
+        }
+      ],
+      [
+        "wait",
+        "a",
+        "before_commit"
+      ],
+      [
+        "spawn",
+        "b"
+      ],
+      [
+        "finish",
+        "b"
+      ],
+      [
+        "go",
+        "a"
+      ],
+      [
+        "finish",
+        "a"
+      ],
+      [
+        "replay",
+        "b_retry"
+      ],
+      [
+        "replay",
+        "sequential"
+      ],
+      [
+        "spawn",
+        "conflict",
+        {
+          "amount": 8
+        }
+      ],
+      [
+        "finish",
+        "conflict"
+      ]
+    ],
+    "expect": {
+      "effect_count": 1,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [],
+      "busy_phases": [
+        "BEGIN"
+      ],
+      "payload_conflicts": 1
+    },
+    "contains": {}
+  },
+  "T04": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "pause": "after_commit"
+        }
+      ],
+      [
+        "wait",
+        "a",
+        "after_commit"
+      ],
+      [
+        "kill",
+        "a"
+      ],
+      [
+        "lock",
+        "exclusive"
+      ],
+      [
+        "resolve"
+      ],
+      [
+        "replay",
+        "blocked"
+      ],
+      [
+        "unlock"
+      ],
+      [
+        "resolve"
+      ]
+    ],
+    "expect": {
+      "effect_count": 1,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [],
+      "kills": [
+        "after_commit"
+      ],
+      "blocked_replays": 1,
+      "read_failures": 2
+    },
+    "contains": {
+      "recoveries": [
+        "HOLD_UNKNOWN",
+        "COMPLETED"
+      ]
+    }
+  },
+  "T05_begin": {
+    "actions": [
+      [
+        "lock",
+        "writer"
+      ],
+      [
+        "spawn",
+        "a"
+      ],
+      [
+        "finish",
+        "a"
+      ],
+      [
+        "unlock"
+      ],
+      [
+        "resolve"
+      ],
+      [
+        "replay",
+        "retry"
+      ]
+    ],
+    "expect": {
+      "effect_count": 1,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [],
+      "busy_phases": [
+        "BEGIN"
+      ]
+    },
+    "contains": {
+      "recoveries": [
+        "REPLAY_ALLOWED"
+      ]
+    }
+  },
+  "T05_commit": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "pause": "before_commit,commit_busy"
+        }
+      ],
+      [
+        "wait",
+        "a",
+        "before_commit"
+      ],
+      [
+        "lock",
+        "reader"
+      ],
+      [
+        "go",
+        "a"
+      ],
+      [
+        "wait",
+        "a",
+        "commit_busy"
+      ],
+      [
+        "resolve"
+      ],
+      [
+        "replay",
+        "blocked"
+      ],
+      [
+        "unlock"
+      ],
+      [
+        "go",
+        "a"
+      ],
+      [
+        "finish",
+        "a"
+      ]
+    ],
+    "expect": {
+      "effect_count": 1,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [],
+      "busy_phases": [
+        "COMMIT"
+      ],
+      "busy_transaction_active": true,
+      "same_transaction_retry": true,
+      "blocked_replays": 1
+    },
+    "contains": {
+      "recoveries": [
+        "HOLD_IN_FLIGHT"
+      ]
+    }
+  },
+  "T06_duplicate": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "mutant": "duplicate"
+        }
+      ],
+      [
+        "finish",
+        "a"
+      ],
+      [
+        "spawn",
+        "b",
+        {
+          "mutant": "duplicate"
+        }
+      ],
+      [
+        "finish",
+        "b"
+      ],
+      [
+        "resolve"
+      ]
+    ],
+    "expect": {
+      "effect_count": 2,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [
+        "DUPLICATE_EFFECT",
+        "FALSE_COMPLETION",
+        "RECEIPT_EFFECT_MISMATCH"
+      ]
+    },
+    "contains": {
+      "recoveries": [
+        "HOLD_INVALID"
+      ]
+    }
+  },
+  "T06_false": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "mutant": "false_complete"
+        }
+      ],
+      [
+        "finish",
+        "a"
+      ]
+    ],
+    "expect": {
+      "effect_count": 0,
+      "receipt_count": 0,
+      "integrity": "ok",
+      "findings": [
+        "FALSE_COMPLETION"
+      ]
+    },
+    "contains": {}
+  },
+  "T06_unsafe": {
+    "actions": [
+      [
+        "spawn",
+        "a",
+        {
+          "pause": "after_commit"
+        }
+      ],
+      [
+        "wait",
+        "a",
+        "after_commit"
+      ],
+      [
+        "kill",
+        "a"
+      ],
+      [
+        "lock",
+        "exclusive"
+      ],
+      [
+        "resolve"
+      ],
+      [
+        "unlock"
+      ],
+      [
+        "unsafe_replay",
+        "b"
+      ]
+    ],
+    "expect": {
+      "effect_count": 2,
+      "receipt_count": 1,
+      "integrity": "ok",
+      "findings": [
+        "DUPLICATE_EFFECT",
+        "FALSE_COMPLETION",
+        "RECEIPT_EFFECT_MISMATCH",
+        "UNSAFE_REPLAY"
+      ]
+    },
+    "contains": {
+      "recoveries": [
+        "HOLD_UNKNOWN"
+      ]
+    }
+  }
+}

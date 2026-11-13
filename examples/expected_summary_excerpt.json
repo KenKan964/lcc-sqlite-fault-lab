@@ -1,0 +1,13 @@
+{
+  "report_schema": "demo-report-v1",
+  "all_expectations_met": true,
+  "total": 4,
+  "passed": 4,
+  "cases_note": "This is an abbreviated example only. Actual output contains paths and metadata.",
+  "expected_findings_by_case": {
+    "after_commit": [],
+    "duplicate": ["DUPLICATE_EFFECT", "RECEIPT_EFFECT_MISMATCH"],
+    "false_complete": ["FALSE_COMPLETION"],
+    "unsafe_replay": ["UNSAFE_REPLAY", "DUPLICATE_EFFECT"]
+  }
+}
