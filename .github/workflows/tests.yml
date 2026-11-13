@@ -1,0 +1,32 @@
+name: SQLite fault-lab tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Demo and security contracts
+        run: |
+          python -m unittest discover -s tests -v
+          python -m unittest discover -s . -p test_safety.py -v
+
+      - name: Smoke demo with a fresh sandbox
+        run: |
+          python demo.py --out ./ci_demo_run_001
+          python -c "import json; s=json.load(open('ci_demo_run_001/summary.json')); assert s['total']==4 and s['passed']==4"
