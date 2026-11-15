@@ -1,10 +1,52 @@
-# LCC SQLite Fault Lab — reproducible crash-and-replay demo
+# LCC SQLite Fault Lab
 
-[日本語](#日本語) · [English](#english)
+![LCC SQLite Fault Lab — Crash after COMMIT, verify safe replay](assets/lcc-banner.jpg)
 
-A **free, standard-library-only Python CLI laboratory** that intentionally kills a test child process **after SQLite COMMIT but before the application success response**, restarts a new child with the **same operation ID**, and independently checks that the business effect was committed **exactly once**. Includes intentionally broken samples to show how duplicate effects, false success, and unsafe replay are detected.
+[![SQLite fault-lab tests](https://github.com/KenKan964/lcc-sqlite-fault-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/KenKan964/lcc-sqlite-fault-lab/actions/workflows/tests.yml) · **Python 3.11+** · **MIT** · **Experimental**
 
-**Status:** experimental PoC, not a production transaction coordinator, not a SQLite bug fix, and not a certified recovery guarantee. Adapted from DEV-001 (2026-11-13). No customer interviews or measured engineer-hours; no claimed commercial ROI.
+**Crash after COMMIT. Verify safe replay.** Reproduce a precise failure in a **synthetic SQLite test database**: terminate the test worker after its COMMIT succeeds but before it acknowledges success, restart using the same operation ID, then check the saved effect and receipt.
+
+**COMMIT直後に停止したら？** 合成SQLite DBで停止・再起動・同じ操作IDの再投入を再現し、二重の業務効果が発生していないかを確認する無料の実験用CLIです。
+
+[日本語ガイド](#日本語) · [English guide](#english) · [Technical specification](TECHNICAL_SPEC.md) · [Safety boundaries](SECURITY.md)
+
+## See it in 30 seconds / 30秒デモ
+
+```bash
+python demo.py --out ./demo_run_001
+```
+
+The output directory must **not** already exist; reruns need a new name. Python 3.11+ and its standard library are all you need. No installation, network service, production DB, or external process target is required.
+
+**What is actually tested / 検査の流れ:**
+
+```mermaid
+flowchart LR
+    A["Write effect + operation receipt"] --> B["SQLite COMMIT succeeds"]
+    B --> C["Kill test child before success response"]
+    C --> D["Independent DB readback"]
+    D --> E["New child: replay same operation ID"]
+    E --> F["Check: one receipt + one effect"]
+```
+
+**Expected summary excerpt** (the real output also includes a local `report` path and metadata; a fresh run is not asserted to use the same PID or path):
+
+```json
+{"total":4,"passed":4,"all_expectations_met":true}
+```
+
+| Test scenario | Expected diagnostic | What the lab observes |
+| --- | --- | --- |
+| `after_commit` | `SAFE_IDEMPOTENT_REPLAY` | Commit succeeded; initial response was lost; replay with the same ID creates no second effect |
+| `duplicate` | `KNOWN_BAD_DETECTED` | Intentionally broken worker writes a duplicate effect |
+| `false_complete` | `KNOWN_BAD_DETECTED` | Broken worker announces success without saving anything |
+| `unsafe_replay` | `KNOWN_BAD_DETECTED` | An intentionally bypassed safety guard causes replay while the saved result is unknown |
+
+**Read the evidence:** [`summary.json` example](examples/expected_summary_excerpt.json) · [`demo walkthrough (日本語)`](docs/DEMO_WALKTHROUGH_ja.md). A **passing known-bad test means the defect was detected**, not that the broken code was safe.
+
+> **Limits:** This is an experimental synthetic Python/SQLite lab, **not** an assurance of safety for arbitrary SQLite apps. It does **not** simulate actual power loss, SQLite internal crash points, fsync/disk faults, external side effects, or a real Drift/Room integration. No verified time savings or commercial advantage are claimed.
+
+---
 
 ## 日本語
 
